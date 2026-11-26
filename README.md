@@ -1,34 +1,27 @@
 # Chetre Murate
 
-Comrat Square hackathon workspace for a coupled information-diffusion and pedestrian-safety simulation.
+An offline hackathon demo for the Comrat Square challenge. It couples a synthetic narrative-diffusion model to pedestrian arrivals and compares civilian assistance packages under a five-unit budget.
 
-## First run
+## Run the demo
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then run these commands from the repository directory in fish or another shell:
+From this directory, install the locked dependencies, generate the multi-seed results, and start Solara.
 
-```sh
+```fish
 uv sync --locked
-uv run solara run main.py --host 127.0.0.1 --port 8765
+uv run --no-sync python -B evaluate_plans.py
+uv run --no-sync solara run main.py --host 127.0.0.1 --port 8767
 ```
 
-Open http://127.0.0.1:8765 in your browser. Press Step or Play to advance the model. Stop the server with Ctrl+C. If that port is occupied, use `--port 8766`.
+Open [the dashboard](http://127.0.0.1:8767/). Once the environment is installed, the simulations use the committed theme cache and run offline.
 
-`main.py` exposes the installed Mesa Virus on a Network example as Solara's `Page`. The example provides the first working network simulation, controls, and charts. Its original disease-state labels remain visible.
+- **Narrative simulation** shows 120 minutes of diffusion. Change the sharing or correction slider, press Reset, then Step or Play. Download the minute-by-minute CSV before leaving this view. Opening it again starts a fresh narrative run.
+- **Response planner** runs a ten-minute coupled scenario. Choose a theme, coupling strength and seed to compare packages and download their full metrics. The planner uses the diffusion model's default probabilities.
+- **Multi-seed evaluation** reads the CSVs written by the evaluator in `results/`. Choose a theme and coupling strength to see mean changes relative to matched baselines across five seeds. The summary download includes the smallest and largest observed changes. The individual-runs download includes every case.
 
-This starter does not yet implement GDELT ingestion, the OSM square, pedestrian movement, a response planner, or the hackathon metrics. It is not a validated model of real-world unrest or attendance.
+## Assumptions
 
-## Next steps
+The coupled planner uses a fictional 40 × 40 m square. A separate OSM prototype uses an unverified candidate boundary in Comrat. Its gates, road availability and movement rules require review before interpreting site-specific results.
 
-1. Define the evaluation inputs, budget, and exact metric definitions.
-2. Build an anonymous information model with explicit exposure, belief, and sharing states.
-3. Verify and cache the square's OSM geometry, including entrance queues.
-4. Add hypothetical attendance coupling and test zero, weak, and strong effects.
-5. Compare civilian-safety responses across held-out scenarios and random seeds.
+GDELT tags select where initial exposure starts in a synthetic network. The committed cache records the global archive, checksum and matching-record counts. News tags provide no evidence of truth, local belief or attendance. The effects of communication, the demand for assistance and the link from exposure to attendance are hypothetical.
 
-Keep credentials and raw restricted datasets out of Git. Model public factual communications, voluntary transport support, and medical assistance; do not model force against civilians.
-
-## Dependencies
-
-Python 3.12 is selected in `.python-version`. Dependencies and their exact resolved versions are recorded in `pyproject.toml` and `uv.lock`. The starter reuses the example included with the locked Mesa version.
-
-The example implementation belongs to the [Mesa project](https://github.com/mesa/mesa), distributed under Apache-2.0; this repository imports it from the installed dependency.
+Peak density uses fixed 5 × 5 m bins. Exposure is person-hours in the active Exposed state. Unfinished journeys include everyone still travelling or inside at the cutoff. First-aid contacts measure access to assistance. The dashboard reports each outcome separately while the challenge scoring formula and medical requirements are open.

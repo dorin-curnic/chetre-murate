@@ -2,6 +2,7 @@ import solara
 from mesa.visualization import Slider, SolaraViz, make_plot_component
 
 from model import NarrativeModel
+from planner_dashboard import EvaluationPage, PlannerPage
 
 
 SEED = 42
@@ -45,29 +46,39 @@ def download_results(model):
     )
 
 
-Page = SolaraViz(
-    NarrativeModel(rng=SEED),
-    components=[
-        show_results,
-        download_results,
-        make_plot_component({
-            "Unaware": "gray",
-            "Exposed": "orange",
-            "Corrected": "green",
-        }),
-        make_plot_component("Exposure-hours"),
-    ],
-    model_params={
-        "rng": SEED,
-        "num_agents": 100,
-        "spread_prob": Slider(
-            "Sharing probability per contact/minute",
-            0.1, 0.0, 1.0, 0.01,
-        ),
-        "correction_prob": Slider(
-            "Correction probability per minute",
-            0.02, 0.0, 1.0, 0.01,
-        ),
-    },
-    name="Comrat Square: synthetic information diffusion",
-)
+@solara.component
+def NarrativePage():
+    model = solara.use_memo(lambda: NarrativeModel(rng=SEED), [])
+    return SolaraViz(
+        model,
+        components=[
+            show_results,
+            download_results,
+            make_plot_component({
+                "Unaware": "gray",
+                "Exposed": "orange",
+                "Corrected": "green",
+            }),
+            make_plot_component("Exposure-hours"),
+        ],
+        model_params={
+            "rng": SEED,
+            "num_agents": 100,
+            "spread_prob": Slider(
+                "Sharing probability per contact/minute",
+                0.1, 0.0, 1.0, 0.01,
+            ),
+            "correction_prob": Slider(
+                "Correction probability per minute",
+                0.02, 0.0, 1.0, 0.01,
+            ),
+        },
+        name="Comrat Square: synthetic information diffusion",
+    )
+
+
+routes = [
+    solara.Route(path="/", component=NarrativePage, label="Narrative simulation"),
+    solara.Route(path="planner", component=PlannerPage, label="Response planner"),
+    solara.Route(path="evaluation", component=EvaluationPage, label="Multi-seed evaluation"),
+]
