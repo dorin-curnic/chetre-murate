@@ -1,3 +1,5 @@
+from random import Random
+
 import mesa
 import networkx as nx
 
@@ -15,6 +17,8 @@ class NarrativeModel(mesa.Model):
         spread_prob=0.1,
         correction_prob=0.02,
         rng=42,
+        *,
+        theme=None,
     ):
         super().__init__(rng=rng)
 
@@ -31,7 +35,12 @@ class NarrativeModel(mesa.Model):
             num_agents, 4, 0.1, seed=self.random
         )
 
-        for person in self.random.sample(self.people, 3):
+        candidates = self.people
+        if theme is not None:
+            candidates = self.people.copy()
+            Random(f"gdelt-theme:{theme}").shuffle(candidates)
+
+        for person in self.random.sample(candidates, 3):
             person.state = "Exposed"
 
         self.datacollector = mesa.DataCollector({

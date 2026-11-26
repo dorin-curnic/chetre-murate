@@ -25,9 +25,9 @@ class Journey(NamedTuple):
         return ceil((self.decision_second + self.travel_seconds) / TICK_SECONDS)
 
 
-def plan_journeys(seed, uplift):
+def plan_journeys(seed, uplift, *, theme=None):
     """Record each intended journey before any assistance is offered."""
-    narrative = NarrativeModel(num_agents=POPULATION, rng=seed)
+    narrative = NarrativeModel(num_agents=POPULATION, rng=seed, theme=theme)
     decisions = Random(f"attendance:{seed}")
     decision_seconds = range(0, EVENT_SECONDS, 60)
     by_minute = [[] for _ in decision_seconds]

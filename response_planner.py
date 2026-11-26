@@ -1,5 +1,6 @@
 """Enumerate hypothetical civilian assistance packages for the fictional square."""
 
+import argparse
 from itertools import combinations
 from random import Random
 
@@ -8,6 +9,7 @@ import pandas as pd
 from coupled_demo import COUPLING, POPULATION, make_crowd, plan_journeys
 from crowd_model import TICK_SECONDS
 from event_model import EVENT_SECONDS
+from gdelt_scenarios import load_catalog
 from model import NarrativeModel
 
 
@@ -25,8 +27,8 @@ def feasible_packages(budget):
                 yield package, cost
 
 
-def bulletin_exposure(seed):
-    model = NarrativeModel(num_agents=POPULATION, rng=seed)
+def bulletin_exposure(seed, *, theme=None):
+    model = NarrativeModel(num_agents=POPULATION, rng=seed, theme=theme)
     for second in range(0, EVENT_SECONDS, 60):
         if second == 120:
             model.correction_prob = 0.10
@@ -84,9 +86,20 @@ def crowd_outcome(seed, journeys, ride_requests, aid_requests, offer_rides):
     }, len(contacts)
 
 
-def compare_plans(seed=42, scenario="weak", budget=BUDGET):
+def compare_plans(seed=42, scenario="weak", budget=BUDGET, *, theme=None):
+    provenance = {}
+    if theme is not None:
+        catalog = load_catalog()
+        if theme not in catalog["themes"]:
+            raise ValueError(f"Unknown cached GDELT theme: {theme}")
+        provenance = {
+            "gdelt_theme": theme,
+            "theme_split": catalog["themes"][theme]["split"],
+            "gdelt_batch_utc": catalog["batch_utc"],
+        }
+
     packages = list(feasible_packages(budget))
-    baseline, journeys = plan_journeys(seed, COUPLING[scenario])
+    baseline, journeys = plan_journeys(seed, COUPLING[scenario], theme=theme)
     requests = Random(f"support:{seed}")
     ride_requests, aid_requests = set(), set()
     for journey in journeys:
@@ -107,10 +120,10 @@ def compare_plans(seed=42, scenario="weak", budget=BUDGET):
         hours = baseline.exposure_hours
         if "bulletin" in package:
             if corrected_hours is None:
-                corrected_hours = bulletin_exposure(seed)
+                corrected_hours = bulletin_exposure(seed, theme=theme)
             hours = corrected_hours
         rows.append({
-            "seed": seed, "scenario": scenario, "budget": budget,
+            "seed": seed, "scenario": scenario, "budget": budget, **provenance,
             "plan": "+".join(package) or "baseline", "cost": cost,
             "planned": len(journeys), **flow, "exposure_person_hours": hours,
             "aid_requests": len(aid_requests), "aid_contacts": contacts,
@@ -132,5 +145,9 @@ def compare_plans(seed=42, scenario="weak", budget=BUDGET):
 
 
 if __name__ == "__main__":
-    result = compare_plans()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--theme", choices=load_catalog()["themes"],
+                        help="Select a cached theme for initial exposure placement.")
+    args = parser.parse_args()
+    result = compare_plans(theme=args.theme)
     print(result.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
