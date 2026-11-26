@@ -164,6 +164,7 @@ class CrowdModel(mesa.Model):
                 ),
             )
             for person in self.people
+            if person.cell is not None
         )
 
         # Prototype metric: fixed 5 × 5 m bins, including boundary bins.
