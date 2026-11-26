@@ -45,12 +45,10 @@ class NarrativeModel(mesa.Model):
     def count(self, state):
         return sum(person.state == state for person in self.people)
 
-    def step(self):
-        # One step is one minute; charge the interval's starting state.
+    def step(self): 
         previous = [person.state for person in self.people]
         self.exposure_hours += previous.count("Exposed") / 60
 
-        # shortcut: all exposed agents share and correction is permanent; revisit before calibration.
         for node, person in enumerate(self.people):
             if previous[node] == "Unaware":
                 contacts = sum(
