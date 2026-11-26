@@ -2,6 +2,7 @@
 
 from math import ceil
 from random import Random
+from typing import NamedTuple
 
 import pandas as pd
 from shapely.geometry import box
@@ -15,8 +16,17 @@ POPULATION = 100
 COUPLING = {"zero": 0.0, "weak": 0.15, "strong": 0.45}
 
 
-def attendance_plan(seed, uplift):
-    """Return (narrative, bookings). Each person makes exactly one decision."""
+class Journey(NamedTuple):
+    person_index: int
+    decision_second: int
+    travel_seconds: int
+
+    def arrival_tick(self):
+        return ceil((self.decision_second + self.travel_seconds) / TICK_SECONDS)
+
+
+def plan_journeys(seed, uplift):
+    """Record each intended journey before any assistance is offered."""
     narrative = NarrativeModel(num_agents=POPULATION, rng=seed)
     decisions = Random(f"attendance:{seed}")
     decision_seconds = range(0, EVENT_SECONDS, 60)
@@ -24,7 +34,7 @@ def attendance_plan(seed, uplift):
     for index in range(POPULATION):
         by_minute[decisions.randrange(len(by_minute))].append(index)
 
-    bookings = []
+    journeys = []
     for second, cohort in zip(decision_seconds, by_minute, strict=True):
         for index in cohort:
             exposed = narrative.people[index].state == "Exposed"
@@ -34,11 +44,31 @@ def attendance_plan(seed, uplift):
             believes = exposed and belief_draw < 0.5
             probability = 0.25 + (uplift if believes else 0.0)
             if attendance_draw < probability:
-                arrival_tick = ceil((second + travel_seconds) / TICK_SECONDS)
-                bookings.append((index, arrival_tick))
+                journeys.append(Journey(index, second, travel_seconds))
         narrative.step()
 
-    return narrative, bookings
+    return narrative, journeys
+
+
+def attendance_plan(seed, uplift):
+    narrative, journeys = plan_journeys(seed, uplift)
+    return narrative, [(j.person_index, j.arrival_tick()) for j in journeys]
+
+
+def make_crowd(seed, bookings):
+    crowd = EventCrowdModel(
+        num_agents=len(bookings), rng=seed, geometry=box(0, 0, 40, 40)
+    )
+    # The same 5 m by 5 m holding area is available in every scenario.
+    crowd.entrance_zone = {
+        (x, y) for x, y in crowd.cells
+        if x * CELL_M < 5 and y * CELL_M < 5
+    }
+    assert len(crowd.entrance_zone) >= POPULATION
+    for person, (index, arrival_tick) in zip(crowd.people, bookings, strict=True):
+        person.narrative_index = index
+        person.arrival_tick = arrival_tick
+    return crowd
 
 
 def run_scenario(seed, scenario):
@@ -46,19 +76,7 @@ def run_scenario(seed, scenario):
     planned = len(bookings)
     scheduled, inside, departed, peak = 0, 0, 0, 0.0
     if bookings:
-        crowd = EventCrowdModel(
-            num_agents=planned, rng=seed, geometry=box(0, 0, 40, 40)
-        )
-        # The same 5 m by 5 m holding area is available in every scenario.
-        crowd.entrance_zone = {
-            (x, y) for x, y in crowd.cells
-            if x * CELL_M < 5 and y * CELL_M < 5
-        }
-        assert len(crowd.entrance_zone) >= POPULATION
-        for person, (index, arrival_tick) in zip(crowd.people, bookings, strict=True):
-            person.narrative_index = index
-            person.arrival_tick = arrival_tick
-
+        crowd = make_crowd(seed, bookings)
         while crowd.running:
             crowd.step()
 
