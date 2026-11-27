@@ -6,5 +6,5 @@ __pycache__/
 .env.*
 !.env.example
 cache/
-data/raw/
+data/
 results/

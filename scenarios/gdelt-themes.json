@@ -1,0 +1,21 @@
+{
+  "source_url": "https://data.gdeltproject.org/gdeltv2/20240115120000.gkg.csv.zip",
+  "archive_sha256": "cb76f10d4fced6f481c35d5641fa2d44368f3f73bccb845d798748f18e822f65",
+  "batch_utc": "2024-01-15T12:00:00Z",
+  "scope": "Global GKG batch; each record counted once per V1THEMES tag.",
+  "total_records": 1345,
+  "themes": {
+    "GENERAL_HEALTH": {
+      "matching_records": 286,
+      "split": "development"
+    },
+    "PUBLIC_TRANSPORT": {
+      "matching_records": 36,
+      "split": "development"
+    },
+    "WATER_SECURITY": {
+      "matching_records": 16,
+      "split": "held_out"
+    }
+  }
+}
